@@ -2,76 +2,155 @@
 
 namespace App\Entity;
 
+use App\Entity\Menu;
+use App\Entity\User;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\GestionnaireRepository;
+use Doctrine\Common\Collections\Collection;
 use ApiPlatform\Core\Annotation\ApiResource;
-use Symfony\Component\Serializer\Annotation\Groups;
-#[ApiResource()]
+use Doctrine\Common\Collections\ArrayCollection;
+use JMS\Serializer\Annotation\Groups;
+
+#[ApiResource(
+    attributes:
+    [
+        "pagination_enabled" => true,
+        "pagination_items_per_page" => 3,
+    ],
+    normalizationContext:
+    [
+        "groups"=>['gestionnaire:read']
+
+    ],
+    denormalizationContext:
+    [
+        "groups"=>['gestionnaire:write']
+    ],
+    collectionOperations:
+    [
+        "get",
+        "post"
+    ],
+    itemOperations:
+    [
+        "patch",
+        "put",
+        "get",
+    ] 
+)]
 
 #[ORM\Entity(repositoryClass: GestionnaireRepository::class)]
 class Gestionnaire extends User
 {
-  
-    #[ORM\Column(type: 'string', length: 50)]
-    #[Groups(["read","write"])]
-    private $nom;
+    #[ORM\OneToMany(mappedBy: 'gestionnaire', targetEntity: Menu::class)]
+    #[Groups(["menu:read","menu:write"])]
+    private $menu;
 
-    #[ORM\Column(type: 'string', length: 50)]
-    #[Groups(["read","write"])]
-    private $prenom;
+    #[ORM\OneToMany(mappedBy: 'gestionnaire', targetEntity: Produit::class)]
+    #[Groups(["produit:read","produit:write"])]
+    private $produits;
 
-    #[ORM\Column(type: 'string', length: 50, nullable: true)]
-    #[Groups(["read","write"])]
-    private $tel;
+    #[ORM\OneToMany(mappedBy: 'gestionnaire', targetEntity: Livreur::class)]
+    #[Groups(["livreur:read","livreur:write"])]
+    private $livreurs;
 
-    #[ORM\Column(type: 'integer')]
-    private $etat;
-
-
-    public function getNom(): ?string
+    public function __construct()
     {
-        return $this->nom;
+        parent::__construct();
+        $this->menu = new ArrayCollection();
+        $this->roles = ["ROLE_GESTIONNAIRE"];
+        $this->produits = new ArrayCollection();
+        $this->clients = new ArrayCollection();
+        $this->livreurs = new ArrayCollection();
     }
 
-    public function setNom(string $nom): self
+
+    /**
+     * @return Collection<int, Menu>
+     */
+    public function getMenu(): Collection
     {
-        $this->nom = $nom;
+        return $this->menu;
+    }
+
+    public function addMenu(Menu $menu): self
+    {
+        if (!$this->menu->contains($menu)) {
+            $this->menu[] = $menu;
+            $menu->setGestionnaire($this);
+        }
 
         return $this;
     }
 
-    public function getPrenom(): ?string
+    public function removeMenu(Menu $menu): self
     {
-        return $this->prenom;
-    }
-
-    public function setPrenom(string $prenom): self
-    {
-        $this->prenom = $prenom;
+        if ($this->menu->removeElement($menu)) {
+            // set the owning side to null (unless already changed)
+            if ($menu->getGestionnaire() === $this) {
+                $menu->setGestionnaire(null);
+            }
+        }
 
         return $this;
     }
 
-    public function getTel(): ?string
+    /**
+     * @return Collection<int, Produit>
+     */
+    public function getProduits(): Collection
     {
-        return $this->tel;
+        return $this->produits;
     }
 
-    public function setTel(?string $tel): self
+    public function addProduit(Produit $produit): self
     {
-        $this->tel = $tel;
+        if (!$this->produits->contains($produit)) {
+            $this->produits[] = $produit;
+            $produit->setGestionnaire($this);
+        }
 
         return $this;
     }
 
-    public function getEtat(): ?int
+    public function removeProduit(Produit $produit): self
     {
-        return $this->etat;
+        if ($this->produits->removeElement($produit)) {
+            // set the owning side to null (unless already changed)
+            if ($produit->getGestionnaire() === $this) {
+                $produit->setGestionnaire(null);
+            }
+        }
+
+        return $this;
     }
 
-    public function setEtat(int $etat): self
+    /**
+     * @return Collection<int, Livreur>
+     */
+    public function getLivreurs(): Collection
     {
-        $this->etat = $etat;
+        return $this->livreurs;
+    }
+
+    public function addLivreur(Livreur $livreur): self
+    {
+        if (!$this->livreurs->contains($livreur)) {
+            $this->livreurs[] = $livreur;
+            $livreur->setGestionnaire($this);
+        }
+
+        return $this;
+    }
+
+    public function removeLivreur(Livreur $livreur): self
+    {
+        if ($this->livreurs->removeElement($livreur)) {
+            // set the owning side to null (unless already changed)
+            if ($livreur->getGestionnaire() === $this) {
+                $livreur->setGestionnaire(null);
+            }
+        }
 
         return $this;
     }

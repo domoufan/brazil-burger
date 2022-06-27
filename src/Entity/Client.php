@@ -2,59 +2,55 @@
 
 namespace App\Entity;
 
+use App\Entity\User;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\ClientRepository;
 use ApiPlatform\Core\Annotation\ApiResource;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: ClientRepository::class)]
-#[ApiResource()]
+#[ApiResource(
+    attributes:
+    [
+        "pagination_enabled" => true,
+        "pagination_items_per_page" => 3,
+    ],
+    normalizationContext:
+    [
+        "groups"=>['client:read']
+
+    ],
+    denormalizationContext:
+    [
+        "groups"=>['client:write']
+    ],
+    collectionOperations:
+    [
+        "get",
+        "post"
+    ],
+    itemOperations:
+    [
+        "patch",
+        "put",
+        "get",
+    ] 
+)]
 class Client extends User
 {
-
     #[ORM\Column(type: 'string', length: 50)]
-    #[Groups(["read","write"])]
-    private $nom;
-
-    #[ORM\Column(type: 'string', length: 50)]
-    #[Groups(["read","write"])]
-    private $prenom;
-
-    #[ORM\Column(type: 'string', length: 50)]
-    #[Groups(["read","write"])]
+    #[Groups(["client:read","client:write"])]
     private $adresse;
 
-    #[ORM\Column(type: 'integer')]
-    private $etat;
+    #[ORM\ManyToOne(targetEntity: Gestionnaire::class, inversedBy: 'clients')]
+    #[Groups(["client:read"])]
+    private $gestionnaire;
 
-    #[ORM\Column(type: 'string', length: 50)]
-    #[Groups(["read","write"])]
-    private $tel;
-
-    public function getNom(): ?string
+    public function __construct()
     {
-        return $this->nom;
+        parent::__construct();
+        $this->roles = ["ROLE_CLIENT"];
     }
-
-    public function setNom(string $nom): self
-    {
-        $this->nom = $nom;
-
-        return $this;
-    }
-
-    public function getPrenom(): ?string
-    {
-        return $this->prenom;
-    }
-
-    public function setPrenom(string $prenom): self
-    {
-        $this->prenom = $prenom;
-
-        return $this;
-    }
-
     public function getAdresse(): ?string
     {
         return $this->adresse;
@@ -67,27 +63,4 @@ class Client extends User
         return $this;
     }
 
-    public function getEtat(): ?int
-    {
-        return $this->etat;
-    }
-
-    public function setEtat(int $etat): self
-    {
-        $this->etat = $etat;
-
-        return $this;
-    }
-
-    public function getTel(): ?string
-    {
-        return $this->tel;
-    }
-
-    public function setTel(string $tel): self
-    {
-        $this->tel = $tel;
-
-        return $this;
-    }
 }

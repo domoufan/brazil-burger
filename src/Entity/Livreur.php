@@ -2,66 +2,58 @@
 
 namespace App\Entity;
 
+use App\Entity\User;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\LivreurRepository;
 use ApiPlatform\Core\Annotation\ApiResource;
 use Symfony\Component\Serializer\Annotation\Groups;
-#[ApiResource()]
+#[ApiResource(
+    attributes:
+    [
+        "pagination_enabled" => true,
+        "pagination_items_per_page" => 3,
+    ],
+    normalizationContext:
+    [
+        "groups"=>["livreur:read"]
+
+    ],
+    denormalizationContext:
+    [
+        "groups"=>["livreur:write"]
+    ],
+    collectionOperations:
+    [
+        "get",
+        "post"
+    ],
+    itemOperations:
+    [
+        "patch",
+        "put",
+        "get",
+    ] 
+)]
 
 #[ORM\Entity(repositoryClass: LivreurRepository::class)]
-class Livreur
+class Livreur extends User
 {
-    #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column(type: 'integer')]
- private $id;
-
     #[ORM\Column(type: 'string', length: 50)]
-    #[Groups(["read","write"])]
-    private $nom;
-
-    #[ORM\Column(type: 'string', length: 50)]
-    #[Groups(["read","write"])]
-    private $prenom;
-
-    #[ORM\Column(type: 'string', length: 50)]
-    #[Groups(["read","write"])]
+    #[Groups(["livreur:read","livreur:write"])]
     private $adresse;
 
     #[ORM\Column(type: 'string', length: 50)]
-    #[Groups(["read","write"])]
-    private $mat_moto;
+    #[Groups(["livreur:read","livreur:write"])]
+    private $matMoto;
 
-    #[ORM\Column(type: 'integer')]
-    private $etat;
-    
-    public function getId(): ?int
+    #[ORM\ManyToOne(targetEntity: Gestionnaire::class, inversedBy: 'livreurs')]
+    #[Groups(["livreur:read"])]
+    private $gestionnaire;
+
+    public function __construct()
     {
-        return $this->id;
-    }
-
-    public function getNom(): ?string
-    {
-        return $this->nom;
-    }
-
-    public function setNom(string $nom): self
-    {
-        $this->nom = $nom;
-
-        return $this;
-    }
-
-    public function getPrenom(): ?string
-    {
-        return $this->prenom;
-    }
-
-    public function setPrenom(string $prenom): self
-    {
-        $this->prenom = $prenom;
-
-        return $this;
+        parent::__construct();
+        $this->roles = ["ROLE_LIVREUR"];
     }
 
     public function getAdresse(): ?string
@@ -78,24 +70,24 @@ class Livreur
 
     public function getMatMoto(): ?string
     {
-        return $this->mat_moto;
+        return $this->matMoto;
     }
 
-    public function setMatMoto(string $mat_moto): self
+    public function setMatMoto(string $matMoto): self
     {
-        $this->mat_moto = $mat_moto;
+        $this->matMoto = $matMoto;
 
         return $this;
     }
 
-    public function getEtat(): ?int
+    public function getGestionnaire(): ?Gestionnaire
     {
-        return $this->etat;
+        return $this->gestionnaire;
     }
 
-    public function setEtat(int $etat): self
+    public function setGestionnaire(?Gestionnaire $gestionnaire): self
     {
-        $this->etat = $etat;
+        $this->gestionnaire = $gestionnaire;
 
         return $this;
     }

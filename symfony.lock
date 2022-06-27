@@ -1,4 +1,7 @@
 {
+    "acseo/typesense-bundle": {
+        "version": "v0.6.7"
+    },
     "api-platform/core": {
         "version": "2.6",
         "recipe": {
@@ -61,6 +64,15 @@
             "migrations/.gitignore"
         ]
     },
+    "friendsofsymfony/elastica-bundle": {
+        "version": "6.1",
+        "recipe": {
+            "repo": "github.com/symfony/recipes-contrib",
+            "branch": "main",
+            "version": "5.0",
+            "ref": "46c9cd2c1e07f0fcfd97e96f12b03b2e0845c4cd"
+        }
+    },
     "jms/serializer-bundle": {
         "version": "4.0",
         "recipe": {
@@ -97,6 +109,18 @@
         },
         "files": [
             "config/packages/nelmio_cors.yaml"
+        ]
+    },
+    "nyholm/psr7": {
+        "version": "1.5",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "1.0",
+            "ref": "0cd4d2d0e7f646fda75f9944f747a56e6ed13d4c"
+        },
+        "files": [
+            "config/packages/nyholm_psr7.yaml"
         ]
     },
     "symfony/console": {

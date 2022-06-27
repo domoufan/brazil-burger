@@ -5,43 +5,31 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\UserRepository;
 use ApiPlatform\Core\Annotation\ApiResource;
-use JMS\Serializer\Annotation\SerializedName;
+use App\Controller\EmailValidatorController;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Annotation\SerializedName;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
-
-#[ApiResource(
-        attributes:
-    [
-        "pagination_enabled" => true,
-        "pagination_items_per_page" => 3,
-    ],
-    normalizationContext:
-    [
-        "groups"=>['read']
-    ],
-    denormalizationContext:
-    [
-        "groups"=>['write']
-    ],
-    collectionOperations:
-    [
-        "get",
-        "post"
-    ],
-    itemOperations:
-    [
-        "patch",
-        "put",
-        "get"
-    ] 
-)]
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\InheritanceType("JOINED")]
 #[ORM\DiscriminatorColumn(name: "role", type: "string")]
 #[ORM\DiscriminatorMap(["client" => "Client", "gestionnaire" => "Gestionnaire", "livreur"=> "Livreur"])]
-
+#[ApiResource(
+    collectionOperations:
+    [
+            "EMAILVALIDATE"=>[
+            "method"=>"PATCH",
+            "deserialize" =>false,
+            "path"=>"/users/validate/{token}",
+            "controller"=>EmailValidatorController::class
+        ]
+            ],
+    itemOperations:
+    [
+        
+    ]
+)]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -50,37 +38,54 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     protected $id;
 
     #[ORM\Column(type: 'string', length: 180, unique: true)]
-    #[Groups(["read","write"])]
+    #[Groups(["client:read","client:write","gestionnaire:read","gestionnaire:write","livreur:read","livreur:write"])]
     protected $email;
 
     #[ORM\Column(type: 'json')]
-    protected $roles = [];
+    #[Groups(["gestionnaire:read"])]
+    protected $roles = ["ROLE_VISITEUR"];
 
     #[ORM\Column(type: 'string')]
     protected $password;
 
+    #[Groups(["client:write","gestionnaire:write","livreur:write"])]
     #[SerializedName('password')]
-    #[Groups(["write"])]
-    private $plainPassword;
+    protected $plainPassword;
 
     #[ORM\Column(type: 'string', length: 255)]
     private $token;
 
-   // #[ORM\Column(type: 'boolean')]
-   // private $isEnable;
+    #[ORM\Column(type: 'boolean')]
+    private $isEnable;
 
     #[ORM\Column(type: 'datetime')]
     private $expiredAt;
 
+    #[ORM\Column(type: 'string', length: 50)]
+    #[Groups(["client:read","client:write","gestionnaire:read","gestionnaire:write","livreur:read","livreur:write"])]
+    protected $nom;
+
+    #[ORM\Column(type: 'string', length: 50)]
+    #[Groups(["client:read","client:write","gestionnaire:read","gestionnaire:write","livreur:read","livreur:write"])]
+    protected $prenom;
+
+    #[ORM\Column(type: 'boolean')]
+    #[Groups(["client:write","gestionnaire:read","gestionnaire:write","livreur:write"])]
+    protected $etat;
+
+    #[ORM\Column(type: 'string', length: 50)]
+    #[Groups(["client:read","client:write","gestionnaire:read","gestionnaire:write","livreur:read","livreur:write"])]
+    protected $telephone;
+
     public function __construct()
     {
-        //$this->isEnable = false;
+        $this->isEnable = false;
         $this->generateTokent();
     }
 
     public function generateTokent(){
         $this->expiredAt = new \DateTime("+1 day");
-        $this->token  = "trouver_generateur_de_token";
+        $this->token  = rtrim(strtr(base64_encode(random_bytes(128)),'+/','-_'),'=');
     } 
 
     public function getId(): ?int
@@ -150,7 +155,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function eraseCredentials()
     {
         // If you store any temporary, sensitive data on the user, clear it here
-        // $this->plainPassword = null;
+        $this->plainPassword = null;
     }
 
     /**
@@ -205,6 +210,54 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setExpiredAt(\DateTimeInterface $expiredAt): self
     {
         $this->expiredAt = $expiredAt;
+
+        return $this;
+    }
+
+    public function getNom(): ?string
+    {
+        return $this->nom;
+    }
+
+    public function setNom(string $nom): self
+    {
+        $this->nom = $nom;
+
+        return $this;
+    }
+
+    public function getPrenom(): ?string
+    {
+        return $this->prenom;
+    }
+
+    public function setPrenom(string $prenom): self
+    {
+        $this->prenom = $prenom;
+
+        return $this;
+    }
+
+    public function isEtat(): ?bool
+    {
+        return $this->etat;
+    }
+
+    public function setEtat(bool $etat): self
+    {
+        $this->etat = $etat;
+
+        return $this;
+    }
+
+    public function getTelephone(): ?string
+    {
+        return $this->telephone;
+    }
+
+    public function setTelephone(string $telephone): self
+    {
+        $this->telephone = $telephone;
 
         return $this;
     }
