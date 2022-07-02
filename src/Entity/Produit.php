@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\ProduitRepository;
 use ApiPlatform\Core\Annotation\ApiFilter;
@@ -36,7 +38,7 @@ use Symfony\Bundle\SecurityBundle\Security\UserAuthenticator;
     [
         "get",
         "patch",
-        "put",
+        "put"
     ]
 )]
 #[ApiFilter(SearchFilter::class, properties:['nom'=>'partial','type'=>'partial'])]
@@ -73,11 +75,22 @@ class Produit
     private $description;
 
     #[ORM\ManyToOne(targetEntity: Gestionnaire::class, inversedBy: 'produits')]
+    #[Groups(["produit:read"])]
     private $gestionnaire ;
 
-    #[ORM\ManyToOne(targetEntity: Menu::class, inversedBy: 'produits')]
-    private $menu;
 
+    #[ORM\ManyToMany(targetEntity: Commande::class, mappedBy: 'produits')]
+    private $commandes;
+
+    #[ORM\ManyToMany(targetEntity: Menu::class, mappedBy: 'produits')]
+    private $menus;
+
+    public function __construct()
+    {
+        $this->commandes = new ArrayCollection();
+        $this->menus = new ArrayCollection();
+    }
+    
     public function getId(): ?int
     {
         return $this->id;
@@ -167,14 +180,57 @@ class Produit
         return $this;
     }
 
-    public function getMenu(): ?Menu
+
+    /**
+     * @return Collection<int, Commande>
+     */
+    public function getCommandes(): Collection
     {
-        return $this->menu;
+        return $this->commandes;
     }
 
-    public function setMenu(?Menu $menu): self
+    public function addCommande(Commande $commande): self
     {
-        $this->menu = $menu;
+        if (!$this->commandes->contains($commande)) {
+            $this->commandes[] = $commande;
+            $commande->addProduit($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCommande(Commande $commande): self
+    {
+        if ($this->commandes->removeElement($commande)) {
+            $commande->removeProduit($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Menu>
+     */
+    public function getMenus(): Collection
+    {
+        return $this->menus;
+    }
+
+    public function addMenu(Menu $menu): self
+    {
+        if (!$this->menus->contains($menu)) {
+            $this->menus[] = $menu;
+            $menu->addProduit($this);
+        }
+
+        return $this;
+    }
+
+    public function removeMenu(Menu $menu): self
+    {
+        if ($this->menus->removeElement($menu)) {
+            $menu->removeProduit($this);
+        }
 
         return $this;
     }

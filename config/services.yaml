@@ -7,6 +7,12 @@ parameters:
 
 services:
     # default configuration for services in *this* file
+    App\EventLister\Menu:
+        tags:
+            # these are the options required to define the entity listener
+            name: 'doctrine.orm.entity_listener'
+            event: 'prePersist'
+            entity: 'App\Entity\Menu'
     _defaults:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.

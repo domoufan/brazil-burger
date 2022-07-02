@@ -32,7 +32,7 @@ use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\NumericFilter;
     [
         "get",
         "patch",
-        "put",
+        "put"
     ],
     collectionOperations:
     [
@@ -40,18 +40,19 @@ use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\NumericFilter;
         "post"
     ]
 )]
+
 #[ApiFilter(SearchFilter::class, properties:['nom'=>'partial','type'=>'partial'])]
 #[ApiFilter(NumericFilter::class, properties:['prix'])]
 class Menu 
 {
+    
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
     private $id;
 
-    #[ORM\Column(type: 'float')]
-    #[Groups(["menu:read","menu:write"])]
-    private $prix ;
+    #[Groups(["menu:read"])]
+    private $prixmenu ;
 
     #[ORM\Column(type: 'string', length: 50)]
     #[Groups(["menu:read","menu:write"])]
@@ -69,9 +70,6 @@ class Menu
     #[Groups(["gestionnaire:read"])]
     private $gestionnaire;
 
-    #[ORM\OneToMany(mappedBy: 'menu', targetEntity: Produit::class)]
-    #[Groups(["menu:read","menu:write"])]
-    private $produits;
 
     #[ORM\Column(type: 'string', length: 50, nullable: true)]
     #[Groups(["menu:read","menu:write"])]
@@ -81,30 +79,28 @@ class Menu
     #[Groups(["menu:read","menu:write"])]
     private $description;
 
+
+    #[ORM\ManyToMany(targetEntity: Commande::class, mappedBy: 'menus')]
+    private $commandes;
+
+    #[ORM\ManyToMany(targetEntity: Produit::class, inversedBy: 'menus')]
+    #[Groups(["menu:read","menu:write"])]
+    private $produits;
+
     public function __construct()
     {
+        $this->commandes = new ArrayCollection();
         $this->produits = new ArrayCollection();
+    }
 
-    /*     foreach ($this->produits as $value) {
-            var_dump($value);
-        } */
+    public function getPrixmenu()
+    {
+        return array_reduce($this->produits->toArray(),function($total,$produit){return $total + $produit->getPrix();},0);
     }
 
     public function getId(): ?int
     {
         return $this->id;
-    }
-
-    public function getPrix(): ?float
-    {
-        return $this->prix;
-    }
-
-    public function setPrix(float $prix): self
-    {
-        $this->prix = $prix;
-
-        return $this;
     }
 
     public function getNom(): ?string
@@ -115,7 +111,6 @@ class Menu
     public function setNom(string $nom): self
     {
         $this->nom = $nom;
-
         return $this;
     }
 
@@ -155,35 +150,7 @@ class Menu
         return $this;
     }
 
-    /**
-     * @return Collection<int, Produit>
-     */
-    public function getProduits(): Collection
-    {
-        return $this->produits;
-    }
 
-    public function addProduit(Produit $produit): self
-    {
-        if (!$this->produits->contains($produit)) {
-            $this->produits[] = $produit;
-            $produit->setMenu($this);
-        }
-
-        return $this;
-    }
-
-    public function removeProduit(Produit $produit): self
-    {
-        if ($this->produits->removeElement($produit)) {
-            // set the owning side to null (unless already changed)
-            if ($produit->getMenu() === $this) {
-                $produit->setMenu(null);
-            }
-        }
-
-        return $this;
-    }
 
     public function getType(): ?string
     {
@@ -208,4 +175,48 @@ class Menu
 
         return $this;
     }
+
+    /**
+     * @return Collection<int, Commande>
+     */
+    public function getCommandes(): Collection
+    {
+        return $this->commandes;
+    }
+
+    public function addCommande(Commande $commande): self
+    {
+        if (!$this->commandes->contains($commande)) {
+            $this->commandes[] = $commande;
+            $commande->addMenu($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Produit>
+     */
+    public function getProduits(): Collection
+    {
+        return $this->produits;
+    }
+
+    public function addProduit(Produit $produit): self
+    {
+        if (!$this->produits->contains($produit)) {
+            $this->produits[] = $produit;
+        }
+
+        return $this;
+    }
+
+    public function removeProduit(Produit $produit): self
+    {
+        $this->produits->removeElement($produit);
+
+        return $this;
+    }
+
+    
 }

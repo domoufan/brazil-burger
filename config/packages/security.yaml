@@ -34,13 +34,12 @@ security:
     # Note: Only the *first* access control that matches will be used
     access_control:
         # - { path: ^/admin, roles: ROLE_ADMIN }
-        - { path: ^/api/login, roles: PUBLIC_ACCESS}
-        - { path: ^/api/clients, roles: ROLE_GESTIONNAIRE }
-        - { path: ^/api/produits, roles: ROLE_GESTIONNAIRE }
-        - { path: ^/api/produits, roles: ROLE_CLIENT }
-        - { path: ^/api/menus, roles: ROLE_GESTIONNAIRE }
-        - { path: ^/api/menus, roles: ROLE_CLIENT }
-        - { path: ^/api/livreurs, roles: ROLE_GESTIONNAIRE }
+        #- { path: ^/api/login, roles: PUBLIC_ACCESS}
+        #- { path: ^/api/clients, roles: ROLE_GESTIONNAIRE }
+        #- { path: ^/api/produits, roles: ROLE_GESTIONNAIRE }
+        #- { path: ^/api/menus, roles: ROLE_GESTIONNAIRE }
+        #- { path: ^/api/livreurs, roles: ROLE_GESTIONNAIRE }
+        #- { path: ^/api/zones, roles: ROLE_GESTIONNAIRE}
         
 
 when@test:

@@ -3,14 +3,15 @@ namespace App\Controller\DataPersister;
 
 use App\Entity\Menu;
 use App\Entity\User;
-use App\Entity\Client;
+use App\Entity\Zone;
 use App\Entity\Livreur;
 use App\Entity\Produit;
+use App\Entity\Commande;
 use App\Services\Mailer;
+use App\Entity\Gestionnaire;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use ApiPlatform\Core\DataPersister\ContextAwareDataPersisterInterface;
-use App\Entity\Gestionnaire;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
@@ -32,7 +33,9 @@ class DataPersister implements ContextAwareDataPersisterInterface
     {
         return $data instanceof User or
             $data instanceof Produit or
-            $data instanceof Menu;
+            $data instanceof Menu or
+            $data instanceof Commande or
+            $data instanceof Zone;
     }
 
     public function persist($data, $context = [])
