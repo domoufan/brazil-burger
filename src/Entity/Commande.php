@@ -6,8 +6,14 @@ use Doctrine\ORM\Mapping as ORM;
 use App\Repository\CommandeRepository;
 use Doctrine\Common\Collections\Collection;
 use ApiPlatform\Core\Annotation\ApiResource;
+use ApiPlatform\Core\Annotation\ApiSubresource;
+use DateTime;
 use Doctrine\Common\Collections\ArrayCollection;
+use Symfony\Component\Validator\Constraints\Date as date;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Annotation\SerializedName;
+use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 #[ORM\Entity(repositoryClass: CommandeRepository::class)]
 #[ApiResource(
@@ -17,19 +23,20 @@ use Symfony\Component\Serializer\Annotation\Groups;
         'pagination_items_per_page'=>3,
 
     ],
-    normalizationContext:
-    [
-        "groups"=>['commande:read']
-    ],
-    denormalizationContext:
-    [
-        "groups"=>['commande:write']
-    ],
     itemOperations:
     [
         "get",
         "patch",
         "put",
+    ],
+        normalizationContext:
+    [
+        "groups"=>['commande:read']
+
+    ],
+    denormalizationContext:
+    [
+        "groups"=>['commande:write']
     ],
     collectionOperations:
     [
@@ -44,76 +51,72 @@ class Commande
     #[ORM\Column(type: 'integer')]
     private $id;
 
+
     #[ORM\Column(type: 'date')]
-    #[Groups(['commande:read','commande:write'])]
+    #[Groups(['commande:read'])]
     private $dateCommande;
 
-    #[ORM\Column(type: 'boolean')]
-    #[Groups(['commande:read','commande:write'])]
-    private $isCommande;
 
     #[ORM\Column(type: 'boolean')]
-    #[Groups(['commande:read','commande:write'])]
-    private $isPayer;
+
+    #[Groups(['commande:read'])]
+    private $isCommande = true;
+
+    #[ORM\Column(type: 'boolean')]
+
+    #[Groups(['commande:read'])]
+    private $isPayer = false;
 
 
     #[Groups(['commande:read'])]
     private $prixComm;
 
     #[ORM\ManyToOne(targetEntity: Client::class, inversedBy: 'commandes')]
-    #[Groups(['commande:read','commande:write'])]
+     //#[ApiSubresource()]
     private $client;
 
     #[ORM\ManyToOne(targetEntity: Gestionnaire::class, inversedBy: 'commandes')]
     #[Groups(['commande:read'])]
+     //#[ApiSubresource()]
+   
     private $gestionnaire;
 
-    #[ORM\ManyToMany(targetEntity: Menu::class, inversedBy: 'commandes')]
-    #[Groups(['commande:read','commande:write'])]
-    private $menus;
-
-    #[ORM\ManyToMany(targetEntity: Produit::class, inversedBy: 'commandes')]
-    #[Groups(['commande:read','commande:write'])]
-    private $produits;
-
-    #[ORM\ManyToOne(targetEntity: Zone::class, inversedBy: 'commandes')]
-    #[Groups(['commande:read','commande:write'])]
-    private $zone;
 
     #[ORM\ManyToOne(targetEntity: Livraison::class, inversedBy: 'commandes')]
     #[Groups(['commande:read'])]
+     //#[ApiSubresource()]
     private $livraison;
 
+    #[ORM\OneToMany(mappedBy: 'commande', targetEntity: CommandeMenu::class ,cascade:['persist'])]
+    #[Groups(['commande:read','commande:write'])]
+    #[SerializedName('menus')]
+    private $commandeMenus;
+
+    #[ORM\OneToMany(mappedBy: 'commande', targetEntity: CommandeProduit::class ,cascade:['persist'])]
+    #[Groups(['commande:read','commande:write'])]
+    #[SerializedName('produits')]
+    private $commandeProduits;
+
+    
     public function __construct()
     {
-        $this->menus = new ArrayCollection();
-        $this->produits = new ArrayCollection();
+        $this->dateCommande = new DateTime();
+        $this->commandeMenus = new ArrayCollection();
+        $this->commandeProduits = new ArrayCollection();
     }
+
     #[Groups(['commande:read'])]
 
     public function getPrixComm()
     {
-        $prod = array_reduce($this->produits->toArray(),function($total,$produit){return $total + $produit->getPrix();});
-        $men = array_reduce($this->menus->toArray(),function($total,$menu){return $total + $menu->getPrixmenu();});
-        return $prod + $men + $this->zone->getPrixDeLivraison();
+       /*  $prod = array_reduce($this->produits->toArray(),function($total){return $total;});
+        $men = array_reduce($this->menus->toArray(),function($total,){return $total;});
+        return $prod + $men; */
     }
     public function getId(): ?int
     {
         return $this->id;
     }
-
-    public function getDateCommande(): ?\DateTimeInterface
-    {
-        return $this->dateCommande;
-    }
-
-    public function setDateCommande(\DateTimeInterface $dateCommande): self
-    {
-        $this->dateCommande = $dateCommande;
-
-        return $this;
-    }
-
 
 
     public function isIsCommande(): ?bool
@@ -176,66 +179,6 @@ class Commande
         return $this;
     }
 
-    /**
-     * @return Collection<int, Menu>
-     */
-    public function getMenus(): Collection
-    {
-        return $this->menus;
-    }
-
-    public function addMenu(Menu $menu): self
-    {
-        if (!$this->menus->contains($menu)) {
-            $this->menus[] = $menu;
-        }
-
-        return $this;
-    }
-
-    public function removeMenu(Menu $menu): self
-    {
-        $this->menus->removeElement($menu);
-
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, Produit>
-     */
-    public function getProduits(): Collection
-    {
-        return $this->produits;
-    }
-
-    public function addProduit(Produit $produit): self
-    {
-        if (!$this->produits->contains($produit)) {
-            $this->produits[] = $produit;
-        }
-
-        return $this;
-    }
-
-    public function removeProduit(Produit $produit): self
-    {
-        $this->produits->removeElement($produit);
-
-        return $this;
-    }
-
-    public function getZone(): ?Zone
-    {
-        return $this->zone;
-    }
-
-    public function setZone(?Zone $zone): self
-    {
-        $this->zone = $zone;
-
-        return $this;
-    }
-
     public function getLivraison(): ?Livraison
     {
         return $this->livraison;
@@ -244,6 +187,87 @@ class Commande
     public function setLivraison(?Livraison $livraison): self
     {
         $this->livraison = $livraison;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, CommandeMenu>
+     */
+    public function getCommandeMenus(): Collection
+    {
+        return $this->commandeMenus;
+    }
+
+    public function addCommandeMenu(CommandeMenu $commandeMenu): self
+    {
+        if (!$this->commandeMenus->contains($commandeMenu)) {
+            $this->commandeMenus[] = $commandeMenu;
+            $commandeMenu->setCommande($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCommandeMenu(CommandeMenu $commandeMenu): self
+    {
+        if ($this->commandeMenus->removeElement($commandeMenu)) {
+            // set the owning side to null (unless already changed)
+            if ($commandeMenu->getCommande() === $this) {
+                $commandeMenu->setCommande(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, CommandeProduit>
+     */
+    public function getCommandeProduits(): Collection
+    {
+        return $this->commandeProduits;
+    }
+
+    public function addCommandeProduit(CommandeProduit $commandeProduit): self
+    {
+        if (!$this->commandeProduits->contains($commandeProduit)) {
+            $this->commandeProduits[] = $commandeProduit;
+            $commandeProduit->setCommande($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCommandeProduit(CommandeProduit $commandeProduit): self
+    {
+        if ($this->commandeProduits->removeElement($commandeProduit)) {
+            // set the owning side to null (unless already changed)
+            if ($commandeProduit->getCommande() === $this) {
+                $commandeProduit->setCommande(null);
+            }
+        }
+
+        return $this;
+    }
+
+
+    /**
+     * Get the value of dateCommande
+     */ 
+    public function getDateCommande()
+    {
+        return $this->dateCommande;
+    }
+
+    /**
+     * Set the value of dateCommande
+     *
+     * @return  self
+     */ 
+    public function setDateCommande($dateCommande)
+    {
+        $this->dateCommande = $dateCommande;
 
         return $this;
     }

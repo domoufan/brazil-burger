@@ -6,6 +6,8 @@ use Doctrine\ORM\Mapping as ORM;
 use App\Repository\LivraisonRepository;
 use Doctrine\Common\Collections\Collection;
 use ApiPlatform\Core\Annotation\ApiResource;
+use ApiPlatform\Core\Annotation\ApiSubresource;
+use DateTime;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Serializer\Annotation\Groups;
 
@@ -45,27 +47,34 @@ class Livraison
     private $id;
 
     #[ORM\Column(type: 'integer')]
-    #[Groups(['livraison:read','livraison:write'])]
-    private $numLiv;
+    #[Groups(['livraison:read'])]
+    private $numLiv = 12345;// A AUTO GENERER
 
     #[ORM\Column(type: 'time', nullable: true)]
-    #[Groups(['livraison:read','livraison:write'])]
+    #[Groups(['livraison:read'])]
     private $delaiLiv;
 
     #[ORM\Column(type: 'date')]
-    #[Groups(['livraison:read','livraison:write'])]
+    #[Groups(['livraison:read'])]
     private $dateLiv;
 
     #[ORM\OneToMany(mappedBy: 'livraison', targetEntity: Commande::class)]
     #[Groups(['livraison:read','livraison:write'])]
+     //#[ApiSubresource()]
     private $commandes;
 
     #[ORM\ManyToOne(targetEntity: Livreur::class, inversedBy: 'livraisons')]
     #[Groups(['livraison:read','livraison:write'])]
+     //#[ApiSubresource()]
     private $livreur;
+
+    #[ORM\ManyToOne(targetEntity: Zone::class, inversedBy: 'livraisons')]
+    #[Groups(['livraison:read','livraison:write'])]
+    private $zone;
 
     public function __construct()
     {
+        $this->dateLiv = new DateTime('now');
         $this->commandes = new ArrayCollection();
     }
 
@@ -148,6 +157,18 @@ class Livraison
     public function setLivreur(?Livreur $livreur): self
     {
         $this->livreur = $livreur;
+
+        return $this;
+    }
+
+    public function getZone(): ?Zone
+    {
+        return $this->zone;
+    }
+
+    public function setZone(?Zone $zone): self
+    {
+        $this->zone = $zone;
 
         return $this;
     }

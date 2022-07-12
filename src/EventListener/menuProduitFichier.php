@@ -8,6 +8,6 @@ class menuProduitFichier
 {
     public function prePersist(Menu $menu,LifecycleEventArgs $even)
     {
-        dd("HERE");
+        dd("HERE on menu persister");
     }
 }

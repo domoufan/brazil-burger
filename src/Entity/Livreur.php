@@ -3,11 +3,12 @@
 namespace App\Entity;
 
 use App\Entity\User;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\LivreurRepository;
+use Doctrine\Common\Collections\Collection;
 use ApiPlatform\Core\Annotation\ApiResource;
+use ApiPlatform\Core\Annotation\ApiSubresource;
+use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Serializer\Annotation\Groups;
 #[ApiResource(
     attributes:
@@ -50,9 +51,11 @@ class Livreur extends User
 
     #[ORM\ManyToOne(targetEntity: Gestionnaire::class, inversedBy: 'livreurs')]
     #[Groups(["livreur:read"])]
+     //#[ApiSubresource()]
     private $gestionnaire;
 
     #[ORM\OneToMany(mappedBy: 'livreur', targetEntity: Livraison::class)]
+     //#[ApiSubresource()]
     private $livraisons;
 
     public function __construct()

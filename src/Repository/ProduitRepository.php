@@ -42,7 +42,25 @@ class ProduitRepository extends ServiceEntityRepository
     /**
      * @return Produit[] Returns an array of Produit objects
     */
-    public function findByLike($value): array
+    public function findByLikeType($value): array
+   {
+       return $this->createQueryBuilder('p')
+            ->where("p.type LIKE :value")
+            ->setParameter('value',$value)
+            ->getQuery()
+            ->getResult()
+        ;
+    }    
+    public function findByNoLikeType($value): array
+   {
+       return $this->createQueryBuilder('p')
+            ->where("p.type NOT LIKE :value")
+            ->setParameter('value',$value)
+            ->getQuery()
+            ->getResult()
+        ;
+    }    
+    public function findByLikeNom($value): array
    {
        return $this->createQueryBuilder('p')
             ->where("p.nom LIKE :value")
@@ -50,6 +68,14 @@ class ProduitRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult()
         ;
+    }
+    public function findByLikeTaille($value):array
+    {
+        return $this->createQueryBuilder('p')
+        ->where('p.taille LIKE :value')
+        ->setParameter('value',$value)
+        ->getQuery()
+        ->getResult();
     }
 
 //    /**

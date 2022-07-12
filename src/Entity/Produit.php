@@ -11,7 +11,7 @@ use ApiPlatform\Core\Annotation\ApiResource;
 use Symfony\Component\Serializer\Annotation\Groups;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\NumericFilter;
-use Symfony\Bundle\SecurityBundle\Security\UserAuthenticator;
+use JMS\Serializer\Annotation\SerializedName;
 
 #[ORM\Entity(repositoryClass: ProduitRepository::class)]
 #[ApiResource(
@@ -21,13 +21,14 @@ use Symfony\Bundle\SecurityBundle\Security\UserAuthenticator;
         'pagination_items_per_page'=>3,
 
     ],
-    normalizationContext:
+        normalizationContext:
     [
-        "groups"=>["produit:read"]
+        "groups"=>['produit:read']
+
     ],
     denormalizationContext:
     [
-        "groups"=>["produit:write"]
+        "groups"=>['produit:write']
     ],
     collectionOperations:
     [
@@ -36,7 +37,10 @@ use Symfony\Bundle\SecurityBundle\Security\UserAuthenticator;
     ],
     itemOperations:
     [
-        "get",
+        "get"/* =>[
+            "security" => "is_granted('ajouter', object)",
+            "security_message" => "only gestionner can add product"
+        ] */,
         "patch",
         "put"
     ]
@@ -50,6 +54,7 @@ class Produit
     #[ORM\Column(type: 'integer')]
     private $id;
 
+    
     #[ORM\Column(type: 'string', length: 50)]
     #[Groups(["produit:read","produit:write"])]
     private $nom;
@@ -59,36 +64,46 @@ class Produit
     private $prix;
 
     #[ORM\Column(type: 'boolean')]
-    #[Groups(["produit:read","produit:write"])]
-    private $etat;
-
-    #[ORM\Column(type: 'object', nullable: true)]
-    #[Groups(["produit:read","produit:write"])]
-    private $image;
+    /* #[Groups(["produit:read","produit:write"])] */
+    private $etat = true;
 
     #[ORM\Column(type: 'string', length: 50)]
     #[Groups(["produit:read","produit:write"])]
     private $type;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
-    #[Groups(["produit:read","produit:write"])]
+    /* #[Groups(["produit:read","produit:write"])] */
     private $description;
 
     #[ORM\ManyToOne(targetEntity: Gestionnaire::class, inversedBy: 'produits')]
     #[Groups(["produit:read"])]
+    //#[ApiSubresource()]
     private $gestionnaire ;
 
+    #[ORM\OneToMany(mappedBy: 'produit', targetEntity: CommandeProduit::class)]
+    private $commandeProduits;
 
-    #[ORM\ManyToMany(targetEntity: Commande::class, mappedBy: 'produits')]
-    private $commandes;
+    #[ORM\OneToMany(mappedBy: 'produit', targetEntity: MenuProduit::class)]
+    #[SerializedName('menus')]
+    private $menuProduits;
 
-    #[ORM\ManyToMany(targetEntity: Menu::class, mappedBy: 'produits')]
-    private $menus;
+    #[ORM\Column(type: 'string', length: 3)]
+    #[Groups(["produit:read","produit:write"])]
+    private $taille ;
+    
+    #[ORM\Column(type: 'blob', nullable: true)]
+    #[Groups(["produit:read","produit:write"])]
+    private $imageFile;
+
+    #[Groups(["produit:read","produit:write"])]
+    #[SerializedName('imageFile')]
+    private $imageName;
+
 
     public function __construct()
     {
-        $this->commandes = new ArrayCollection();
-        $this->menus = new ArrayCollection();
+        $this->commandeProduits = new ArrayCollection();
+        $this->menuProduits = new ArrayCollection();
     }
     
     public function getId(): ?int
@@ -132,17 +147,6 @@ class Produit
         return $this;
     }
 
-    public function getImage(): ?object
-    {
-        return $this->image;
-    }
-
-    public function setImage(?object $image): self
-    {
-        $this->image = $image;
-
-        return $this;
-    }
 
     public function getType(): ?string
     {
@@ -180,58 +184,101 @@ class Produit
         return $this;
     }
 
+    /**
+     * @return Collection<int, CommandeProduit>
+     */
+    public function getCommandeProduits(): Collection
+    {
+        return $this->commandeProduits;
+    }
+
+    public function addCommandeProduit(CommandeProduit $commandeProduit): self
+    {
+        if (!$this->commandeProduits->contains($commandeProduit)) {
+            $this->commandeProduits[] = $commandeProduit;
+            $commandeProduit->setProduit($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCommandeProduit(CommandeProduit $commandeProduit): self
+    {
+        if ($this->commandeProduits->removeElement($commandeProduit)) {
+            // set the owning side to null (unless already changed)
+            if ($commandeProduit->getProduit() === $this) {
+                $commandeProduit->setProduit(null);
+            }
+        }
+
+        return $this;
+    }
 
     /**
-     * @return Collection<int, Commande>
+     * @return Collection<int, MenuProduit>
      */
-    public function getCommandes(): Collection
+    public function getMenuProduits(): Collection
     {
-        return $this->commandes;
+        return $this->menuProduits;
     }
 
-    public function addCommande(Commande $commande): self
+    public function addMenuProduit(MenuProduit $menuProduit): self
     {
-        if (!$this->commandes->contains($commande)) {
-            $this->commandes[] = $commande;
-            $commande->addProduit($this);
+        if (!$this->menuProduits->contains($menuProduit)) {
+            $this->menuProduits[] = $menuProduit;
+            $menuProduit->setProduit($this);
         }
 
         return $this;
     }
 
-    public function removeCommande(Commande $commande): self
+    public function removeMenuProduit(MenuProduit $menuProduit): self
     {
-        if ($this->commandes->removeElement($commande)) {
-            $commande->removeProduit($this);
+        if ($this->menuProduits->removeElement($menuProduit)) {
+            // set the owning side to null (unless already changed)
+            if ($menuProduit->getProduit() === $this) {
+                $menuProduit->setProduit(null);
+            }
         }
 
         return $this;
     }
 
-    /**
-     * @return Collection<int, Menu>
-     */
-    public function getMenus(): Collection
+    public function getTaille(): ?string
     {
-        return $this->menus;
+        return $this->taille;
     }
 
-    public function addMenu(Menu $menu): self
+    public function setTaille(string $taille): self
     {
-        if (!$this->menus->contains($menu)) {
-            $this->menus[] = $menu;
-            $menu->addProduit($this);
-        }
+        $this->taille = $taille;
 
         return $this;
     }
 
-    public function removeMenu(Menu $menu): self
+    public function getImageName()
     {
-        if ($this->menus->removeElement($menu)) {
-            $menu->removeProduit($this);
-        }
+        return $this->imageName;
+    }
+
+    public function setImageName($imageName)
+    {
+        $this->imageName = $imageName;
 
         return $this;
     }
+
+    public function getImageFile()
+    {
+        return $this->imageFile;
+    }
+
+    public function setImageFile($imageFile): self
+    {
+        $this->imageFile = $imageFile;
+
+        return $this;
+    }
+
+
 }

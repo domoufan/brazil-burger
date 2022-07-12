@@ -15,9 +15,9 @@ class EmailValidatorController extends AbstractController
     {
         $this->manager = $manager;
     }
-    public function __invoke(Request $requrest, UserRepository $use)
+    public function __invoke(Request $request, UserRepository $use)
     {
-        $token = $requrest->get('token');
+        $token = $request->get('token');
         $user = $use->findOneBy(['token' => $token]);
         
         if (!$user) {

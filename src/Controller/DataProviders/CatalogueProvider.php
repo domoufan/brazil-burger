@@ -23,7 +23,7 @@ class CatalogueProvider implements ContextAwareCollectionDataProviderInterface,R
     public function getCollection(string $resourceClass, ?string $operationName = null, array $context = [])
     {
         $tab['menu'] = $this->menu->findAll();
-        $tab['produit'] = $this->produit->findAll();
+        $tab['produit'] = $this->produit->findByNoLikeType('COMPLEMENT');
 
         return $tab ;
     }

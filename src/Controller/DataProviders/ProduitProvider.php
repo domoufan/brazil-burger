@@ -5,12 +5,14 @@ use App\Entity\Produit;
 use App\Repository\ProduitRepository;
 use ApiPlatform\Core\DataProvider\RestrictedDataProviderInterface;
 use ApiPlatform\Core\DataProvider\ContextAwareCollectionDataProviderInterface;
+use Symfony\Component\Security\Core\Security;
 
 class ProduitProvider implements ContextAwareCollectionDataProviderInterface, RestrictedDataProviderInterface
 {
     public function __construct(ProduitRepository $produit)
     {
         $this->produit = $produit ;
+    
     }
     public function supports(string $resourceClass, string $operationName = null, array $context = []): bool
     {
@@ -18,7 +20,9 @@ class ProduitProvider implements ContextAwareCollectionDataProviderInterface, Re
     }
     public function getCollection(string $resourceClass, string $operationName = null, array $context = []){
 
-        return $this->produit->findByLike("");
+        return $this->produit->findAll();
+        //return $this->produit->findByLikeNom("%PM");
+  
     }
     
 }

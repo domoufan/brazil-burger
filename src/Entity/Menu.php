@@ -3,14 +3,18 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use App\Controller\MenuController;
 use App\Repository\MenuRepository;
 use ApiPlatform\Core\Annotation\ApiFilter;
 use Doctrine\Common\Collections\Collection;
 use ApiPlatform\Core\Annotation\ApiResource;
+use ApiPlatform\Core\Annotation\ApiSubresource;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Serializer\Annotation\Groups;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\NumericFilter;
+use JMS\Serializer\Annotation\SerializedName;
+use Symfony\Component\Serializer\Annotation\SerializedName as AnnotationSerializedName;
 
 #[ORM\Entity(repositoryClass: MenuRepository::class)]
 #[ApiResource(
@@ -20,9 +24,10 @@ use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\NumericFilter;
         'pagination_items_per_page'=>3,
 
     ],
-    normalizationContext:
+        normalizationContext:
     [
         "groups"=>['menu:read']
+
     ],
     denormalizationContext:
     [
@@ -37,7 +42,12 @@ use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\NumericFilter;
     collectionOperations:
     [
         "get",
-        "post"
+        "post",
+        "menuPost"=>[
+            "method"=>"POST",
+            "path"=>"/menu2",
+            "controller"=>MenuController::class,
+        ]
     ]
 )]
 
@@ -51,23 +61,15 @@ class Menu
     #[ORM\Column(type: 'integer')]
     private $id;
 
-    #[Groups(["menu:read"])]
-    private $prixmenu ;
-
     #[ORM\Column(type: 'string', length: 50)]
     #[Groups(["menu:read","menu:write"])]
     private $nom;
 
-    #[ORM\Column(type: 'object', nullable: true)]
-    #[Groups(["menu:read","menu:write"])]
-    private $image;
-
     #[ORM\Column(type: 'boolean')]
-    #[Groups(["menu:read","menu:write"])]
-    private $etat;
+    private $etat = true;
 
     #[ORM\ManyToOne(targetEntity: Gestionnaire::class, inversedBy: 'menu')]
-    #[Groups(["gestionnaire:read"])]
+     //#[ApiSubresource()]
     private $gestionnaire;
 
 
@@ -76,26 +78,38 @@ class Menu
     private $type;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
-    #[Groups(["menu:read","menu:write"])]
     private $description;
 
+    #[ORM\OneToMany(mappedBy: 'menu', targetEntity: CommandeMenu::class)]
+    private $commandeMenus;
 
-    #[ORM\ManyToMany(targetEntity: Commande::class, mappedBy: 'menus')]
-    private $commandes;
-
-    #[ORM\ManyToMany(targetEntity: Produit::class, inversedBy: 'menus')]
+    #[SerializedName('produits')]
+    #[ORM\OneToMany(mappedBy: 'menu', targetEntity: MenuProduit::class  ,cascade:['persist'])]
     #[Groups(["menu:read","menu:write"])]
-    private $produits;
+    private $menuProduits;
+
+    #[ORM\Column(type: 'string', length: 3)]
+    private $taille;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private $imageName;
+
+    #[ORM\Column(type: 'blob', nullable: true)]
+    private $imageFile;
+
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private $imageSize;
+
 
     public function __construct()
     {
-        $this->commandes = new ArrayCollection();
-        $this->produits = new ArrayCollection();
+        $this->commandeMenus = new ArrayCollection();
+        $this->menuProduits = new ArrayCollection();
     }
 
     public function getPrixmenu()
     {
-        return array_reduce($this->produits->toArray(),function($total,$produit){return $total + $produit->getPrix();},0);
+        return array_reduce($this->produits->toArray(),function($total,$produit){return ($total + $produit->getPrix());},0);
     }
 
     public function getId(): ?int
@@ -111,18 +125,6 @@ class Menu
     public function setNom(string $nom): self
     {
         $this->nom = $nom;
-        return $this;
-    }
-
-    public function getImage(): ?object
-    {
-        return $this->image;
-    }
-
-    public function setImage(?object $image): self
-    {
-        $this->image = $image;
-
         return $this;
     }
 
@@ -150,8 +152,6 @@ class Menu
         return $this;
     }
 
-
-
     public function getType(): ?string
     {
         return $this->type;
@@ -176,47 +176,125 @@ class Menu
         return $this;
     }
 
+
+
     /**
-     * @return Collection<int, Commande>
+     * @return Collection<int, CommandeMenu>
      */
-    public function getCommandes(): Collection
+    public function getCommandeMenus(): Collection
     {
-        return $this->commandes;
+        return $this->commandeMenus;
     }
 
-    public function addCommande(Commande $commande): self
+    public function addCommandeMenu(CommandeMenu $commandeMenu): self
     {
-        if (!$this->commandes->contains($commande)) {
-            $this->commandes[] = $commande;
-            $commande->addMenu($this);
+        if (!$this->commandeMenus->contains($commandeMenu)) {
+            $this->commandeMenus[] = $commandeMenu;
+            $commandeMenu->setMenu($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCommandeMenu(CommandeMenu $commandeMenu): self
+    {
+        if ($this->commandeMenus->removeElement($commandeMenu)) {
+            // set the owning side to null (unless already changed)
+            if ($commandeMenu->getMenu() === $this) {
+                $commandeMenu->setMenu(null);
+            }
         }
 
         return $this;
     }
 
     /**
-     * @return Collection<int, Produit>
+     * @return Collection<int, MenuProduit>
      */
-    public function getProduits(): Collection
+    public function getMenuProduits(): Collection
     {
-        return $this->produits;
+        return $this->menuProduits;
     }
 
-    public function addProduit(Produit $produit): self
+    public function addMenuProduit(MenuProduit $menuProduit): self
     {
-        if (!$this->produits->contains($produit)) {
-            $this->produits[] = $produit;
+        if (!$this->menuProduits->contains($menuProduit)) {
+            $this->menuProduits[] = $menuProduit;
+            $menuProduit->setMenu($this);
+        }
+
+        return $this;
+    }    
+    
+    public function addProduit(Produit $produit ,int $quantity = 1)
+    {
+       $menuprod = new MenuProduit();
+
+       $menuprod->setProduit($produit);
+       $menuprod->setMenu($this);
+       $menuprod->setQuantity($quantity);
+
+       $this->addMenuProduit($menuprod);
+    }
+
+    public function removeMenuProduit(MenuProduit $menuProduit): self
+    {
+        if ($this->menuProduits->removeElement($menuProduit)) {
+            // set the owning side to null (unless already changed)
+            if ($menuProduit->getMenu() === $this) {
+                $menuProduit->setMenu(null);
+            }
         }
 
         return $this;
     }
 
-    public function removeProduit(Produit $produit): self
+    public function getTaille(): ?string
     {
-        $this->produits->removeElement($produit);
+        return $this->taille;
+    }
+
+    public function setTaille(string $taille): self
+    {
+        $this->taille = $taille;
 
         return $this;
     }
 
+    public function getImageName(): ?string
+    {
+        return $this->imageName;
+    }
+
+    public function setImageName(?string $imageName): self
+    {
+        $this->imageName = $imageName;
+
+        return $this;
+    }
+
+    public function getImageFile()
+    {
+        return $this->imageFile;
+    }
+
+    public function setImageFile($imageFile): self
+    {
+        $this->imageFile = $imageFile;
+
+        return $this;
+    }
+
+    public function getImageSize(): ?int
+    {
+        return $this->imageSize;
+    }
+
+    public function setImageSize(?int $imageSize): self
+    {
+        $this->imageSize = $imageSize;
+
+        return $this;
+    }
     
 }

@@ -50,12 +50,16 @@ class Zone
     #[Groups(["zone:write","zone:read"])]
     private $prixDeLivraison;
 
-    #[ORM\OneToMany(mappedBy: 'zone', targetEntity: Commande::class)]
-    private $commandes;
+    #[ORM\OneToMany(mappedBy: 'zone', targetEntity: Livraison::class)]
+    private $livraisons;
+
+    #[ORM\ManyToOne(targetEntity: Gestionnaire::class, inversedBy: 'zones')]
+    #[ORM\JoinColumn(nullable: false)]
+    private $gestionnaire;
 
     public function __construct()
     {
-        $this->commandes = new ArrayCollection();
+        $this->livraisons = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -100,31 +104,43 @@ class Zone
     }
 
     /**
-     * @return Collection<int, Commande>
+     * @return Collection<int, Livraison>
      */
-    public function getCommandes(): Collection
+    public function getLivraisons(): Collection
     {
-        return $this->commandes;
+        return $this->livraisons;
     }
 
-    public function addCommande(Commande $commande): self
+    public function addLivraison(Livraison $livraison): self
     {
-        if (!$this->commandes->contains($commande)) {
-            $this->commandes[] = $commande;
-            $commande->setZone($this);
+        if (!$this->livraisons->contains($livraison)) {
+            $this->livraisons[] = $livraison;
+            $livraison->setZone($this);
         }
 
         return $this;
     }
 
-    public function removeCommande(Commande $commande): self
+    public function removeLivraison(Livraison $livraison): self
     {
-        if ($this->commandes->removeElement($commande)) {
+        if ($this->livraisons->removeElement($livraison)) {
             // set the owning side to null (unless already changed)
-            if ($commande->getZone() === $this) {
-                $commande->setZone(null);
+            if ($livraison->getZone() === $this) {
+                $livraison->setZone(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getGestionnaire(): ?Gestionnaire
+    {
+        return $this->gestionnaire;
+    }
+
+    public function setGestionnaire(?Gestionnaire $gestionnaire): self
+    {
+        $this->gestionnaire = $gestionnaire;
 
         return $this;
     }

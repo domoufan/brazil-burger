@@ -57,6 +57,9 @@ class Gestionnaire extends User
     #[ORM\OneToMany(mappedBy: 'gestionnaire', targetEntity: Commande::class)]
     private $commandes;
 
+    #[ORM\OneToMany(mappedBy: 'gestionnaire', targetEntity: Zone::class)]
+    private $zones;
+
     public function __construct()
     {
         parent::__construct();
@@ -66,6 +69,7 @@ class Gestionnaire extends User
         $this->clients = new ArrayCollection();
         $this->livreurs = new ArrayCollection();
         $this->commandes = new ArrayCollection();
+        $this->zones = new ArrayCollection();
     }
 
 
@@ -183,6 +187,36 @@ class Gestionnaire extends User
             // set the owning side to null (unless already changed)
             if ($commande->getGestionnaire() === $this) {
                 $commande->setGestionnaire(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Zone>
+     */
+    public function getZones(): Collection
+    {
+        return $this->zones;
+    }
+
+    public function addZone(Zone $zone): self
+    {
+        if (!$this->zones->contains($zone)) {
+            $this->zones[] = $zone;
+            $zone->setGestionnaire($this);
+        }
+
+        return $this;
+    }
+
+    public function removeZone(Zone $zone): self
+    {
+        if ($this->zones->removeElement($zone)) {
+            // set the owning side to null (unless already changed)
+            if ($zone->getGestionnaire() === $this) {
+                $zone->setGestionnaire(null);
             }
         }
 
